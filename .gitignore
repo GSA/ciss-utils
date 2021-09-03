@@ -1,0 +1,9 @@
+## Go ##
+.DS_Store
+*/.DS_Store
+vendor/
+coverage.out
+
+## Jetbrains ##
+.idea
+*.iml
