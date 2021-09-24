@@ -9,15 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 )
 
-type Secret struct {
-	Username   string `json:"-"`
-	KeyID      string `json:"-"`
-	Secret     string
-	SecretName string `json:"-"`
-	SecretID   string `json:"-"`
-	Type       string
-}
-
 func (s *Secret) ToJSON() (string, error) {
 	b, err := json.Marshal(s)
 	if err != nil {
