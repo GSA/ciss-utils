@@ -24,6 +24,15 @@ func GetSecret(cfg aws.Config, secretID string) (Secret, error) {
 	return sec, nil
 }
 
+func SecretExists(cfg aws.Config, secretID string) bool {
+	svc := secretsmanager.NewFromConfig(cfg)
+	_, err := svc.DescribeSecret(context.TODO(), &secretsmanager.DescribeSecretInput{
+		SecretId: aws.String(secretID),
+	})
+	// Check for other exceptions
+	return err == nil
+}
+
 func GetSecretValue(cfg aws.Config, secretID string) (string, error) {
 	svc := secretsmanager.NewFromConfig(cfg)
 	output, err := svc.GetSecretValue(context.TODO(), &secretsmanager.GetSecretValueInput{

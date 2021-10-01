@@ -12,7 +12,7 @@ import (
 func (s *Secret) ToJSON() (string, error) {
 	b, err := json.Marshal(s)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal secret to JSON: %q -> %v", s.SecretName, err)
+		return "", fmt.Errorf("failed to marshal secret: %q -> %v", s.Name, err)
 	}
 	return string(b), nil
 }
@@ -35,25 +35,25 @@ func StoreKey(cfg aws.Config, s *Secret, kms string) error {
 		return err
 	}
 
-	if len(s.SecretID) == 0 {
+	if len(s.ID) == 0 {
 		_, err := svc.CreateSecret(context.TODO(), &secretsmanager.CreateSecretInput{
-			Name:         aws.String(s.SecretName),
+			Name:         aws.String(s.Name),
 			KmsKeyId:     aws.String(kms),
 			SecretString: aws.String(secret),
 		})
 		if err != nil {
-			return fmt.Errorf("failed to create secret with name: %q -> %v", s.SecretName, err)
+			return fmt.Errorf("failed to create secret with name: %q -> %v", s.Name, err)
 		}
 		return nil
 	}
 
 	_, err = svc.UpdateSecret(context.TODO(), &secretsmanager.UpdateSecretInput{
-		SecretId:     aws.String(s.SecretID),
+		SecretId:     aws.String(s.ID),
 		KmsKeyId:     aws.String(kms),
 		SecretString: aws.String(secret),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to update secret with name: %q -> %v", s.SecretName, err)
+		return fmt.Errorf("failed to update secret with name: %q -> %v", s.Name, err)
 	}
 	return nil
 }
