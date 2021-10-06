@@ -17,9 +17,9 @@ func (s *Secret) ToJSON() (string, error) {
 	return string(b), nil
 }
 
-func (s *Secret) StoreKeys(sess aws.Config, sec []*Secret, kms string) error {
+func StoreSecrets(sess aws.Config, sec []*Secret, kms string) error {
 	for _, f := range sec {
-		err := StoreKey(sess, f, kms)
+		err := StoreSecret(sess, f, kms)
 		if err != nil {
 			return fmt.Errorf("failed to store key: %v", err)
 		}
@@ -27,30 +27,45 @@ func (s *Secret) StoreKeys(sess aws.Config, sec []*Secret, kms string) error {
 	return nil
 }
 
-func StoreKey(cfg aws.Config, s *Secret, kms string) error {
-	svc := secretsmanager.NewFromConfig(cfg)
-
+func StoreSecret(cfg aws.Config, s *Secret, kmsKeyID string) error {
 	secret, err := s.ToJSON()
 	if err != nil {
 		return err
 	}
-
 	if len(s.ID) == 0 {
-		_, err := svc.CreateSecret(context.TODO(), &secretsmanager.CreateSecretInput{
-			Name:         aws.String(s.Name),
-			KmsKeyId:     aws.String(kms),
-			SecretString: aws.String(secret),
-		})
-		if err != nil {
-			return fmt.Errorf("failed to create secret with name: %q -> %v", s.Name, err)
-		}
-		return nil
+		return createSecret(cfg, s, kmsKeyID, secret)
 	}
+	return updateSecret(cfg, s, kmsKeyID, secret)
+}
 
-	_, err = svc.UpdateSecret(context.TODO(), &secretsmanager.UpdateSecretInput{
+func StoreValue(cfg aws.Config, s *Secret, kmsKeyID string) error {
+	if len(s.ID) == 0 {
+		return createSecret(cfg, s, kmsKeyID, s.Value)
+	}
+	return updateSecret(cfg, s, kmsKeyID, s.Value)
+}
+
+func createSecret(cfg aws.Config, s *Secret, kmsKeyID string, value string) error {
+	svc := secretsmanager.NewFromConfig(cfg)
+
+	_, err := svc.CreateSecret(context.TODO(), &secretsmanager.CreateSecretInput{
+		Name:         aws.String(s.Name),
+		KmsKeyId:     aws.String(kmsKeyID),
+		SecretString: aws.String(value),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create secret with name: %q -> %v", s.Name, err)
+	}
+	return nil
+}
+
+func updateSecret(cfg aws.Config, s *Secret, kmsKeyID string, value string) error {
+	svc := secretsmanager.NewFromConfig(cfg)
+
+	_, err := svc.UpdateSecret(context.TODO(), &secretsmanager.UpdateSecretInput{
 		SecretId:     aws.String(s.ID),
-		KmsKeyId:     aws.String(kms),
-		SecretString: aws.String(secret),
+		KmsKeyId:     aws.String(kmsKeyID),
+		SecretString: aws.String(value),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to update secret with name: %q -> %v", s.Name, err)
